@@ -123,23 +123,37 @@ def print_game_board():
 
 def create_astar_array():
     user = find_element("user")
+    monkey_not_found = True
     print "User position: " + str(user)
     print "Monkey position: " + str(current_position_of_monkey)
     counter = 0
     global astar_array
     astar_array.append(user + (counter,))
-    counter += 1
-    astar_array = next_step(astar_array, counter)
+
+    while monkey_not_found:
+        counter += 1
+        current_astar_array = list(astar_array)
+        result = next_step(current_astar_array, counter)
+        monkey_not_found = result[0]
+        astar_array = result[1]
+
     print "main list: " + str(astar_array)
 
-def next_step(astar_array, counter):
-    for element in astar_array: 
+def next_step(current_astar_array, counter):
+    monkey_not_found = True
+    global astar_array
+    print current_astar_array
+    for element in current_astar_array:
         coordinates_around = get_coordinates_around((element[0], element[1]))
-    for c in coordinates_around:
-        print str(c) + " -> " +  get_value_from_coordinate(c)
-        astar_array.append(c + (counter,))
-    return astar_array
+        import pdb; pdb.set_trace()
+        print current_astar_array
 
+        for c in coordinates_around:
+            print str(c) + " -> " +  get_value_from_coordinate(c)
+            astar_array.append(c + (counter,))
+            if c == current_position_of_monkey:
+                monkey_not_found = False
+    return (monkey_not_found, astar_array)
 
 def find_element(element_to_find, ):
     for rIndex, row in enumerate(current_level_layout):
