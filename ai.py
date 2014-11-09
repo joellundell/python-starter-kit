@@ -99,4 +99,19 @@ def move(current_game_state):
     # Got it? Sweet! This message will self destruct in five seconds...
 
     # TODO: You may want to do something smarter here
-    return random.choice(['up', 'down', 'left', 'right'])
+
+    printGameBoard(current_game_state)
+    move = random.choice(['up', 'down', 'left', 'right'])
+    print "Moving: " + move
+    import pdb; pdb.set_trace()
+    return move
+
+def printGameBoard(current_game_state):
+    print current_game_state['position']
+    print current_game_state['pickedUp']
+    print current_game_state['layout']
+    size = len(current_game_state['layout'])
+    print size
+    for row in current_game_state['layout']:
+        print "printing row"
+        print current_game_state['layout']

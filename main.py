@@ -1,5 +1,6 @@
 # Hi! Welcome to the Monkey Music Challenge Python starter kit!
 
+from __future__ import print_function
 import sys
 import os
 import urllib
@@ -23,8 +24,9 @@ api_key = sys.argv[2]
 # You POST to a team-specific URL:
 # warmup.monkeymusicchallenge.com/team/<your-team-name>
 # Surf to this URL and watch your monkey carry out your commands!
-team_url = '%s/team/%s' % (server_url, urllib.quote(team_name))
 
+#team_url = '%s/team/%s' % (server_url, urllib.quote(team_name))
+team_url = "http://warmup.monkeymusicchallenge.com/team/Vicious'N'Delicious"
 # We've put the AI-code in a separate module
 import ai
 
