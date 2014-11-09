@@ -136,24 +136,42 @@ def create_astar_array():
         result = next_step(current_astar_array, counter)
         monkey_not_found = result[0]
         astar_array = result[1]
+        print result
+        import pdb; pdb.set_trace()
 
+    import pdb; pdb.set_trace()
     print "main list: " + str(astar_array)
 
 def next_step(current_astar_array, counter):
     monkey_not_found = True
     global astar_array
-    print current_astar_array
+    # print current_astar_array
     for element in current_astar_array:
         coordinates_around = get_coordinates_around((element[0], element[1]))
-        import pdb; pdb.set_trace()
-        print current_astar_array
+    #    print current_astar_array
 
         for c in coordinates_around:
-            print str(c) + " -> " +  get_value_from_coordinate(c)
-            astar_array.append(c + (counter,))
-            if c == current_position_of_monkey:
+     #       print str(c) + " -> " +  get_value_from_coordinate(c)
+
+            #should only be appended if lower or equal counter
+            append_element_to_astar_array(c, counter)
+            if c[0] == current_position_of_monkey[0] and c[1] == current_position_of_monkey[1]:
                 monkey_not_found = False
     return (monkey_not_found, astar_array)
+
+def append_element_to_astar_array(coordinate, counter):
+    global astar_array
+    existingElements = [element for element in astar_array if element[0] == 
+            coordinate[0] and element[1] == coordinate[1]]
+    # print str(existingElements)
+    if len(existingElements) > 0:
+        for element in existingElements:
+            if element[2] >= counter:
+                #substitute for the new one
+                astar_array.remove(element)
+                astar_array.append(coordinate + (counter,))
+    else:
+        astar_array.append(coordinate + (counter,))
 
 def find_element(element_to_find, ):
     for rIndex, row in enumerate(current_level_layout):
@@ -163,12 +181,16 @@ def find_element(element_to_find, ):
     return "can't find element:" + elementToFind
 
 def get_coordinates_around(coordinate):
+    # print "get coordinates for: " + str(coordinate)
     coordinates_around =  [(coordinate[0] - 1,  coordinate[1]),
         (coordinate[0] + 1, coordinate[1]),
         (coordinate[0], coordinate[1] - 1),
         (coordinate[0], coordinate[1] + 1)]
+   # print "surrounding coordinates: " + str(coordinates_around)
     filtered_list = [c for c in coordinates_around if c[0] >= 0 and c[0] < len(current_level_layout)
-            and c[1] >= 0 and c[1] < len(current_level_layout[0]) and get_value_from_coordinate(c) is not "wall"]
+            and c[1] >= 0 and c[1] < len(current_level_layout[0]) and get_value_from_coordinate(c) != "wall"]
+   # print filtered_list
+    #import pdb; pdb.set_trace()
     return filtered_list
 
 def get_value_from_coordinate(coordinate):
