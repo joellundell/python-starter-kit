@@ -1,5 +1,12 @@
 import random
 
+astar_array = []
+
+remaining_number_of_turns = None
+current_level_layout = None
+picked_up_music_items = None
+current_position_of_monkey = None
+
 def move(current_game_state):
     '''This is where you put your AI code!
 
@@ -25,12 +32,15 @@ def move(current_game_state):
     # Too easy for you? Good...
     #
     # The real fun begins when the warmup is over and the competition begins!
+    global current_level_layout
     current_level_layout = current_game_state['layout']
 
     # This is an array of all music items you've currently picked up
+    global picked_up_music_items
     picked_up_music_items = current_game_state['pickedUp']
 
     # The position attribute tells you where your monkey is
+    global current_position_of_monkey
     current_position_of_monkey = current_game_state['position']
 
     # Speaking of positions...
@@ -98,20 +108,54 @@ def move(current_game_state):
     #
     # Got it? Sweet! This message will self destruct in five seconds...
 
-    # TODO: You may want to do something smarter here
-
-    printGameBoard(current_game_state)
+    print_game_board()
+    create_astar_array()
     move = random.choice(['up', 'down', 'left', 'right'])
     print "Moving: " + move
     import pdb; pdb.set_trace()
     return move
 
-def printGameBoard(current_game_state):
-    print current_game_state['position']
-    print current_game_state['pickedUp']
-    print current_game_state['layout']
-    size = len(current_game_state['layout'])
-    print size
-    for row in current_game_state['layout']:
-        print "printing row"
-        print current_game_state['layout']
+def print_game_board():
+    print current_position_of_monkey
+    print picked_up_music_items
+    for row in current_level_layout:
+        print row
+
+def create_astar_array():
+    user = find_element("user")
+    print "User position: " + str(user)
+    print "Monkey position: " + str(current_position_of_monkey)
+    counter = 0
+    global astar_array
+    astar_array.append(user + (counter,))
+    counter += 1
+    astar_array = next_step(astar_array, counter)
+    print "main list: " + str(astar_array)
+
+def next_step(astar_array, counter):
+    for element in astar_array: 
+        coordinates_around = get_coordinates_around((element[0], element[1]))
+    for c in coordinates_around:
+        print str(c) + " -> " +  get_value_from_coordinate(c)
+        astar_array.append(c + (counter,))
+    return astar_array
+
+
+def find_element(element_to_find, ):
+    for rIndex, row in enumerate(current_level_layout):
+        for cIndex, column in enumerate(row):
+            if column == element_to_find:
+                return tuple([rIndex, cIndex])
+    return "can't find element:" + elementToFind
+
+def get_coordinates_around(coordinate):
+    coordinates_around =  [(coordinate[0] - 1,  coordinate[1]),
+        (coordinate[0] + 1, coordinate[1]),
+        (coordinate[0], coordinate[1] - 1),
+        (coordinate[0], coordinate[1] + 1)]
+    filtered_list = [c for c in coordinates_around if c[0] >= 0 and c[0] < len(current_level_layout)
+            and c[1] >= 0 and c[1] < len(current_level_layout[0]) and get_value_from_coordinate(c) is not "wall"]
+    return filtered_list
+
+def get_value_from_coordinate(coordinate):
+    return current_level_layout[coordinate[0]][coordinate[1]]
