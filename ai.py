@@ -114,7 +114,7 @@ def move(current_game_state):
     move = get_move()
 
     print "Moving: " + move
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
     return move
 
 def print_game_board():
@@ -130,12 +130,15 @@ def create_astar_array():
     print "Monkey position: " + str(current_position_of_monkey)
     counter = 0
     global astar_array
+    astar_array = []
     astar_array.append(user + (counter,))
 
     while monkey_not_found:
         counter += 1
         current_astar_array = list(astar_array)
         result = next_step(current_astar_array, counter)
+        print "counter: " + str(counter)
+        print "result: " + str(result)
         monkey_not_found = result[0]
         astar_array = result[1]
     print "main list: " + str(astar_array)
