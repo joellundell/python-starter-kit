@@ -110,7 +110,9 @@ def move(current_game_state):
 
     print_game_board()
     create_astar_array()
-    move = random.choice(['up', 'down', 'left', 'right'])
+    # move = random.choice(['up', 'down', 'left', 'right'])
+    move = get_move()
+
     print "Moving: " + move
     import pdb; pdb.set_trace()
     return move
@@ -136,11 +138,41 @@ def create_astar_array():
         result = next_step(current_astar_array, counter)
         monkey_not_found = result[0]
         astar_array = result[1]
-        print result
-        import pdb; pdb.set_trace()
-
-    import pdb; pdb.set_trace()
     print "main list: " + str(astar_array)
+    # import pdb; pdb.set_trace()
+
+def get_move():
+    possible_moves_list = possible_moves()
+    move = min(possible_moves_list, key=lambda move: move[2])
+    print "move: " + str(move)
+    return get_one_direction(move)
+
+def get_one_direction(move):
+    # import pdb; pdb.set_trace()
+    if move[0] == current_position_of_monkey[0]:
+        if current_position_of_monkey[1] - move[1] > 0:
+            return "left"
+        else:
+            return "right"
+    elif current_position_of_monkey[0] - move[0] > 0:
+        return "up"
+    else:
+        return "down"
+
+
+def possible_moves():
+    global astar_array
+    possible_moves = [move for move in astar_array if move_is_possible(move)]
+    print "possible_moves: " + str(possible_moves)
+    return possible_moves
+
+
+def move_is_possible(move):
+    coordinates_around = get_coordinates_around(current_position_of_monkey)
+    for c in coordinates_around:
+        if c[0] == move[0] and c[1] == move[1]:
+            return True
+    return False
 
 def next_step(current_astar_array, counter):
     monkey_not_found = True
@@ -154,9 +186,10 @@ def next_step(current_astar_array, counter):
      #       print str(c) + " -> " +  get_value_from_coordinate(c)
 
             #should only be appended if lower or equal counter
-            append_element_to_astar_array(c, counter)
             if c[0] == current_position_of_monkey[0] and c[1] == current_position_of_monkey[1]:
                 monkey_not_found = False
+            else:
+                append_element_to_astar_array(c, counter)
     return (monkey_not_found, astar_array)
 
 def append_element_to_astar_array(coordinate, counter):
