@@ -108,12 +108,22 @@ def move(current_game_state):
     #
     # Got it? Sweet! This message will self destruct in five seconds...
 
-    print_game_board()
-    create_astar_array()
-    # move = random.choice(['up', 'down', 'left', 'right'])
+    # print_game_board() u'playlist u'song u'album
+    astar_arrays_list = []
+    for destination in find_elements():
+        astar_arrays_list.append(create_astar_array(destination))
+
+    distances = []
+    for element in astar_arrays_list:
+        distances.append(element[1])
+
+    index = distances.index(min(distances))
+
+    global astar_array
+    astar_array = astar_arrays_list[index][0]
     move = get_move()
 
-    print "Moving: " + move
+    # print "Moving: " + move
     # import pdb; pdb.set_trace()
     return move
 
@@ -123,31 +133,29 @@ def print_game_board():
     for row in current_level_layout:
         print row
 
-def create_astar_array():
-    user = find_element("user")
+def create_astar_array(destination):
     monkey_not_found = True
-    print "User position: " + str(user)
-    print "Monkey position: " + str(current_position_of_monkey)
+    # print "User position: " + str(destination)
+    # print "Monkey position: " + str(current_position_of_monkey)
     counter = 0
     global astar_array
     astar_array = []
-    astar_array.append(user + (counter,))
+    astar_array.append(destination + (counter,))
 
     while monkey_not_found:
         counter += 1
         current_astar_array = list(astar_array)
         result = next_step(current_astar_array, counter)
-        print "counter: " + str(counter)
-        print "result: " + str(result)
         monkey_not_found = result[0]
         astar_array = result[1]
-    print "main list: " + str(astar_array)
+    # print "main list: " + str(astar_array)
+    return (astar_array, counter)
     # import pdb; pdb.set_trace()
 
 def get_move():
     possible_moves_list = possible_moves()
     move = min(possible_moves_list, key=lambda move: move[2])
-    print "move: " + str(move)
+    # print "move: " + str(move)
     return get_one_direction(move)
 
 def get_one_direction(move):
@@ -166,7 +174,7 @@ def get_one_direction(move):
 def possible_moves():
     global astar_array
     possible_moves = [move for move in astar_array if move_is_possible(move)]
-    print "possible_moves: " + str(possible_moves)
+    # print "possible_moves: " + str(possible_moves)
     return possible_moves
 
 
@@ -189,7 +197,8 @@ def next_step(current_astar_array, counter):
      #       print str(c) + " -> " +  get_value_from_coordinate(c)
 
             #should only be appended if lower or equal counter
-            if c[0] == current_position_of_monkey[0] and c[1] == current_position_of_monkey[1]:
+            if c[0] == current_position_of_monkey[0] and \
+                    c[1] == current_position_of_monkey[1]:
                 monkey_not_found = False
             else:
                 append_element_to_astar_array(c, counter)
@@ -197,8 +206,8 @@ def next_step(current_astar_array, counter):
 
 def append_element_to_astar_array(coordinate, counter):
     global astar_array
-    existingElements = [element for element in astar_array if element[0] == 
-            coordinate[0] and element[1] == coordinate[1]]
+    existingElements = [element for element in astar_array if \
+            element[0] == coordinate[0] and element[1] == coordinate[1]]
     # print str(existingElements)
     if len(existingElements) > 0:
         for element in existingElements:
@@ -209,12 +218,16 @@ def append_element_to_astar_array(coordinate, counter):
     else:
         astar_array.append(coordinate + (counter,))
 
-def find_element(element_to_find, ):
-    for rIndex, row in enumerate(current_level_layout):
-        for cIndex, column in enumerate(row):
-            if column == element_to_find:
-                return tuple([rIndex, cIndex])
-    return "can't find element:" + elementToFind
+def find_elements():
+    elements_to_visit = []
+    search_for = ["song", "album", "playlist", "user"]
+    for destiantion in search_for:
+        for rIndex, row in enumerate(current_level_layout):
+            for cIndex, column in enumerate(row):
+                if column == destiantion:
+                    elements_to_visit.append(tuple([rIndex, cIndex]))
+    print "elements_to_visit: " + str(elements_to_visit)
+    return elements_to_visit
 
 def get_coordinates_around(coordinate):
     # print "get coordinates for: " + str(coordinate)
@@ -223,8 +236,10 @@ def get_coordinates_around(coordinate):
         (coordinate[0], coordinate[1] - 1),
         (coordinate[0], coordinate[1] + 1)]
    # print "surrounding coordinates: " + str(coordinates_around)
-    filtered_list = [c for c in coordinates_around if c[0] >= 0 and c[0] < len(current_level_layout)
-            and c[1] >= 0 and c[1] < len(current_level_layout[0]) and get_value_from_coordinate(c) != "wall"]
+    filtered_list = [c for c in coordinates_around if c[0] >= 0 and 
+            c[0] < len(current_level_layout) and c[1] >= 0 and 
+            c[1] < len(current_level_layout[0]) and 
+            get_value_from_coordinate(c) != "wall"]
    # print filtered_list
     #import pdb; pdb.set_trace()
     return filtered_list
