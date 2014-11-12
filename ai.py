@@ -108,25 +108,42 @@ def move(current_game_state):
     #
     # Got it? Sweet! This message will self destruct in five seconds...
 
-    # print_game_board() u'playlist u'song u'album
+    # print_game_board()
     astar_arrays_list = []
     for destination in find_elements():
-        astar_arrays_list.append(create_astar_array(destination))
-
-    distances = []
-    for element in astar_arrays_list:
-        distances.append(element[1])
-
-    index = distances.index(min(distances))
+        astar_arrays_list.append(create_astar_array(destination[1]))
 
     global astar_array
-    astar_array = astar_arrays_list[index][0]
+    astar_array = getAstarArrayToGoTo(astar_arrays_list)
+    print "Deciding move from: " + str(astar_array)
     move = get_move()
 
-    # print "Moving: " + move
+    print "Moving: [" + move + "] towards [" + get_value_from_coordinate(astar_array[0][0:2]) + "] using: " + str(astar_array)
     # import pdb; pdb.set_trace()
     return move
 
+    # changes:
+    # 1. Setting weight 10000 for user when deciding what element to go to
+    # 2. get_coordinates_around takes a boolean that tells it whether it should consider
+    #   the user something it can go to or not. So when there's still items left it 
+    #   considers the user a "wall", something it has to go around
+
+def getAstarArrayToGoTo(astar_arrays_list):
+    if len(astar_arrays_list) == 1:
+        return astar_arrays_list[0][0]
+    else:
+        distances = []
+        for element in astar_arrays_list:
+            coordinate = element[0][0][0:2]
+            if get_value_from_coordinate(coordinate) == "user":
+                distances.append(10000)
+            else:
+                distances.append(element[1])
+            #print element
+    print distances
+    index = distances.index(min(distances))
+    return  astar_arrays_list[index][0]
+    
 def print_game_board():
     print current_position_of_monkey
     print picked_up_music_items
@@ -173,13 +190,15 @@ def get_one_direction(move):
 
 def possible_moves():
     global astar_array
-    possible_moves = [move for move in astar_array if move_is_possible(move)]
-    # print "possible_moves: " + str(possible_moves)
+    goalcoordinate = astar_array[0][0:2]
+    can_go_to_user = get_value_from_coordinate(goalcoordinate) == "user"
+    possible_moves = [move for move in astar_array if move_is_possible(move, can_go_to_user)]
+    print "possible_moves: " + str(possible_moves)
     return possible_moves
 
 
-def move_is_possible(move):
-    coordinates_around = get_coordinates_around(current_position_of_monkey)
+def move_is_possible(move, can_go_to_user):
+    coordinates_around = get_coordinates_around(current_position_of_monkey, can_go_to_user)
     for c in coordinates_around:
         if c[0] == move[0] and c[1] == move[1]:
             return True
@@ -190,7 +209,7 @@ def next_step(current_astar_array, counter):
     global astar_array
     # print current_astar_array
     for element in current_astar_array:
-        coordinates_around = get_coordinates_around((element[0], element[1]))
+        coordinates_around = get_coordinates_around((element[0], element[1]), True)
     #    print current_astar_array
 
         for c in coordinates_around:
@@ -221,25 +240,32 @@ def append_element_to_astar_array(coordinate, counter):
 def find_elements():
     elements_to_visit = []
     search_for = ["song", "album", "playlist", "user"]
-    for destiantion in search_for:
+    for destination in search_for:
         for rIndex, row in enumerate(current_level_layout):
             for cIndex, column in enumerate(row):
-                if column == destiantion:
-                    elements_to_visit.append(tuple([rIndex, cIndex]))
+                if column == destination:
+                    elements_to_visit.append(tuple([destination, (rIndex, cIndex)]))
     print "elements_to_visit: " + str(elements_to_visit)
     return elements_to_visit
 
-def get_coordinates_around(coordinate):
+def get_coordinates_around(coordinate, can_go_to_user):
     # print "get coordinates for: " + str(coordinate)
     coordinates_around =  [(coordinate[0] - 1,  coordinate[1]),
         (coordinate[0] + 1, coordinate[1]),
         (coordinate[0], coordinate[1] - 1),
         (coordinate[0], coordinate[1] + 1)]
    # print "surrounding coordinates: " + str(coordinates_around)
-    filtered_list = [c for c in coordinates_around if c[0] >= 0 and 
-            c[0] < len(current_level_layout) and c[1] >= 0 and 
-            c[1] < len(current_level_layout[0]) and 
-            get_value_from_coordinate(c) != "wall"]
+    if can_go_to_user: 
+        filtered_list = [c for c in coordinates_around if c[0] >= 0 and 
+                c[0] < len(current_level_layout) and c[1] >= 0 and 
+                c[1] < len(current_level_layout[0]) and 
+                get_value_from_coordinate(c) != "wall"]
+    else:
+        filtered_list = [c for c in coordinates_around if c[0] >= 0 and 
+                c[0] < len(current_level_layout) and c[1] >= 0 and 
+                c[1] < len(current_level_layout[0]) and 
+                get_value_from_coordinate(c) != "wall" and
+                get_value_from_coordinate(c) != "user"]
    # print filtered_list
     #import pdb; pdb.set_trace()
     return filtered_list
