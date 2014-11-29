@@ -14,7 +14,7 @@ def move(current_game_state):
     the monkey's next move.'''
 
     # Every game has a limited number of turns. Use every turn wisely!
-    remaining_number_of_turns = current_game_state['turns']
+    remaining_number_of_turns = current_game_state['remainingTurns'] #current_game_state
 
     # The level layout is a 2D-matrix (an array of arrays).
     #
@@ -37,11 +37,24 @@ def move(current_game_state):
 
     # This is an array of all music items you've currently picked up
     global picked_up_music_items
-    picked_up_music_items = current_game_state['pickedUp']
+    picked_up_music_items = current_game_state['inventory']
 
     # The position attribute tells you where your monkey is
     global current_position_of_monkey
     current_position_of_monkey = current_game_state['position']
+
+    # The inventory
+    global inventory
+    inventory = current_game_state['inventory']
+
+        # The inventory
+    global inventory_size
+    inventory_size = current_game_state['inventorySize']
+
+
+    # The inventory
+    global score
+    score = current_game_state['score']
 
     # Speaking of positions...
     #
@@ -108,19 +121,40 @@ def move(current_game_state):
     #
     # Got it? Sweet! This message will self destruct in five seconds...
 
-    # print_game_board()
-    astar_arrays_list = []
-    for destination in find_elements():
-        astar_arrays_list.append(create_astar_array(destination[1]))
+    print_game_board()
+    # astar_arrays_list = []
+    # for destination in find_elements():
+    #     astar_arrays_list.append(create_astar_array(destination[1]))
 
+    # user_arrays_list = []
+    # for destination in find_users():
+    #     user_arrays_list.append(create_astar_array(destination[1]))
     global astar_array
-    astar_array = getAstarArrayToGoTo(astar_arrays_list)
+    if len(inventory) >= inventory_size: 
+        user_arrays_list = []
+        for destination in find_users():
+            user_arrays_list.append(create_astar_array(destination[1]))
+        astar_array = getAstarArrayToGoTo(user_arrays_list)
+    elif True:
+        astar_arrays_list = []
+        for destination in find_elements():
+            astar_arrays_list.append(create_astar_array(destination[1]))
+        astar_array = getAstarArrayToGoTo(astar_arrays_list)
+    else: #TODO: Spank the monkey 
+        astar_arrays_list = []
+        for destination in find_monkey():
+            astar_arrays_list.append(create_astar_array(destination[1]))
+        astar_array = getAstarArrayToGoTo(astar_arrays_list)
+
+
+    # astar_array = getAstarArrayToGoTo(astar_arrays_list)
     print "Deciding move from: " + str(astar_array)
     move = get_move()
 
     print "Moving: [" + move + "] towards [" + get_value_from_coordinate(astar_array[0][0:2]) + "] using: " + str(astar_array)
     # import pdb; pdb.set_trace()
-    return move
+    return {'command': 'move',
+            'direction': move}
 
     # changes:
     # 1. Setting weight 10000 for user when deciding what element to go to
@@ -135,10 +169,16 @@ def getAstarArrayToGoTo(astar_arrays_list):
         distances = []
         for element in astar_arrays_list:
             coordinate = element[0][0][0:2]
-            if get_value_from_coordinate(coordinate) == "user":
-                distances.append(10000)
-            else:
-                distances.append(element[1])
+            # if get_value_from_coordinate(coordinate) == "user":
+            #     distances.append(10000)
+            #     # if len(inventory) >= inventory_size: 
+            #     #     distances.append(-10000)
+            #     # else:
+            #     #     distances.append(10000)
+            # else:
+            #     distances.append(element[1])
+            distances.append(element[1])
+
             #print element
     print distances
     index = distances.index(min(distances))
@@ -165,6 +205,10 @@ def create_astar_array(destination):
         result = next_step(current_astar_array, counter)
         monkey_not_found = result[0]
         astar_array = result[1]
+        # print 'a: ' + str(len(astar_array))
+        # print 'c: ' + str(len(current_astar_array))
+        if len(astar_array) == len(current_astar_array) and monkey_not_found:
+            return (astar_array, 200000)
     # print "main list: " + str(astar_array)
     return (astar_array, counter)
     # import pdb; pdb.set_trace()
@@ -239,7 +283,7 @@ def append_element_to_astar_array(coordinate, counter):
 
 def find_elements():
     elements_to_visit = []
-    search_for = ["song", "album", "playlist", "user"]
+    search_for = ["song", "album", "playlist"]
     for destination in search_for:
         for rIndex, row in enumerate(current_level_layout):
             for cIndex, column in enumerate(row):
@@ -247,6 +291,32 @@ def find_elements():
                     elements_to_visit.append(tuple([destination, (rIndex, cIndex)]))
     print "elements_to_visit: " + str(elements_to_visit)
     return elements_to_visit
+
+def find_users():
+    users_to_visit = []
+    search_for = ["user"]
+    for destination in search_for:
+        for rIndex, row in enumerate(current_level_layout):
+            for cIndex, column in enumerate(row):
+                if column == destination:
+                    users_to_visit.append(tuple([destination, (rIndex, cIndex)]))
+    print "users_to_visit: " + str(users_to_visit)
+    return users_to_visit
+
+def find_monkey():
+    monkey_to_visit = []
+    search_for = ["monkey"]
+    for destination in search_for:
+        for rIndex, row in enumerate(current_level_layout):
+            for cIndex, column in enumerate(row):
+                if column == destination:
+                    if not (current_position_of_monkey[0] == rIndex and
+                    current_position_of_monkey[1] == cIndex):
+                        monkey_to_visit.append(tuple([destination, (rIndex, cIndex)]))
+    print "monkey_to_visit: " + str(monkey_to_visit)
+    return monkey_to_visit
+
+
 
 def get_coordinates_around(coordinate, can_go_to_user):
     # print "get coordinates for: " + str(coordinate)
@@ -259,12 +329,14 @@ def get_coordinates_around(coordinate, can_go_to_user):
         filtered_list = [c for c in coordinates_around if c[0] >= 0 and 
                 c[0] < len(current_level_layout) and c[1] >= 0 and 
                 c[1] < len(current_level_layout[0]) and 
-                get_value_from_coordinate(c) != "wall"]
+                get_value_from_coordinate(c) != "wall" and
+                get_value_from_coordinate(c) != "closed-door"]
     else:
         filtered_list = [c for c in coordinates_around if c[0] >= 0 and 
                 c[0] < len(current_level_layout) and c[1] >= 0 and 
                 c[1] < len(current_level_layout[0]) and 
                 get_value_from_coordinate(c) != "wall" and
+                get_value_from_coordinate(c) != "closed-door" and
                 get_value_from_coordinate(c) != "user"]
    # print filtered_list
     #import pdb; pdb.set_trace()
