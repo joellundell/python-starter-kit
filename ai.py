@@ -248,6 +248,7 @@ def move_is_possible(move, can_go_to_user):
             return True
     return False
 
+
 def next_step(current_astar_array, counter):
     monkey_not_found = True
     global astar_array
@@ -266,6 +267,7 @@ def next_step(current_astar_array, counter):
             else:
                 append_element_to_astar_array(c, counter)
     return (monkey_not_found, astar_array)
+
 
 def append_element_to_astar_array(coordinate, counter):
     global astar_array
