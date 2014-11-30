@@ -42,7 +42,7 @@ def move(current_game_state):
 
     # The position attribute tells you where your monkey is
     global current_position_of_monkey
-    current_position_of_monkey = current_game_state['position']
+    current_position_of_monkey = tuple(current_game_state['position'])
 
     # The inventory
     global inventory
@@ -57,100 +57,22 @@ def move(current_game_state):
     global score
     score = current_game_state['score']
 
-    # Speaking of positions...
-    #
-    # X and Y coordinates can be confusing.
-    # Which way is up and which way is down?
-    #
-    # Here is an example explaining how coordinates work in
-    # Monkey Music Challenge:
-    #
-    # {
-    #   "layout": [["empty", "monkey"]
-    #              ["song",  "empty"]]
-    #   "position": [0, 1],
-    #   ...
-    # }
-    #
-    # The "position" attribute tells you the location of your monkey
-    # in the "layout" matrix. In this example, you're at layout[0][1].
-    #
-    # If you send { "command": "move", "direction": "down", ... }
-    # to the server, you'll get back:
-    #
-    # {
-    #   "layout": [["empty", "empty"]
-    #              ["song",  "monkey"]]
-    #   "position": [1, 1]
-    # }
-    #
-    # If you instead send { "command": "move", "direction": "left", ... }
-    # to the server, you'll get back:
-    #
-    # {
-    #   "layout": [["monkey", "empty"]
-    #              ["song",   "empty"]]
-    #   "position": [0, 0]
-    # }
-    #
-    # So what about picking stuff up then?
-    #
-    # It's simple!
-    #
-    # Just stand next to something you want to pick up and move towards it.
-    #
-    # For example, say our current game state looks like this:
-    #
-    # {
-    #   "layout": [["empty", "empty"]
-    #              ["song",  "monkey"]]
-    #   "position": [1, 1],
-    #   "pickedUp": []
-    # }
-    #
-    # When you send { "command": "move", "direction": "left", ... }
-    # to the server, you'll get back:
-    #
-    #   "layout": [["empty",  "empty"]
-    #              ["empty",  "monkey"]]
-    #   "position": [1, 1],
-    #   "pickedUp": ["song"],
-    #   ...
-    # }
-    #
-    # Instead of moving, your monkey successfully picked up the song!
-    #
-    # Got it? Sweet! This message will self destruct in five seconds...
-
-    # print_game_board()
-    # astar_arrays_list = []
-    # for destination in find_elements():
-    #     astar_arrays_list.append(create_astar_array(destination[1]))
-
-    # user_arrays_list = []
-    # for destination in find_users():
-    #     user_arrays_list.append(create_astar_array(destination[1]))
     global astar_array
-    if len(inventory) >= inventory_size: 
-        user_arrays_list = []
-        for destination in find_users():
-            user_arrays_list.append(create_astar_array(destination[1]))
-        astar_array = getAstarArrayToGoTo(user_arrays_list)
-    elif True:
-        astar_arrays_list = []
-        for destination in find_elements():
-            astar_arrays_list.append(create_astar_array(destination[1]))
-        astar_array = getAstarArrayToGoTo(astar_arrays_list)
+
+    game_board_map = map_game_board(current_position_of_monkey)
+
+    if len(inventory) >= inventory_size: # Inventory full, go to closest user
+        destination = find_elements(["user"], game_board_map)
+    elif True: # go pick up something
+        destination = find_elements(["song", "album", "playlist"], game_board_map)
     else: #TODO: Spank the monkey 
-        monkey_arrays_list = []
-        for destination in find_monkey():
-            print 'destination: ' + str(destination)
-            monkey_arrays_list.append(create_astar_array(destination[1]))
-        astar_array = getAstarArrayToGoTo(monkey_arrays_list)
+        destination = find_elements(["monkey"], game_board_map)
 
-
+    if destination:
+        create_astar_array(destination)
+    else:
+        return {'command': 'idle'} 
     # astar_array = getAstarArrayToGoTo(astar_arrays_list)
-    print "Deciding move from: " + str(astar_array)
     move = get_move()
 
     print "Moving: [" + move + "] towards [" + get_value_from_coordinate(astar_array[0][0:2]) + "] using: " + str(astar_array)
@@ -197,6 +119,26 @@ def print_game_board():
         print row
 
 
+def map_game_board(monkey_position):
+    monkey_not_found = True
+    counter = 0
+    global astar_array
+    astar_array = []
+
+    astar_array.append(monkey_position + (counter, get_value_from_coordinate(monkey_position)))
+    current_astar_array = []
+    done = False
+    while not done:
+        counter += 1
+        current_astar_array = list(astar_array)
+        result = next_step(current_astar_array, counter)
+        monkey_not_found = result[0]
+        astar_array = result[1]
+        if len(astar_array) == len(current_astar_array) or counter >= 20:
+            done = True
+    return astar_array
+
+
 def create_astar_array(destination):
     monkey_not_found = True
     # print "User position: " + str(destination)
@@ -209,7 +151,7 @@ def create_astar_array(destination):
     while monkey_not_found:
         counter += 1
         current_astar_array = list(astar_array)
-        result = next_step(current_astar_array, counter)
+        result = next_step2(current_astar_array, counter)
         monkey_not_found = result[0]
         astar_array = result[1]
         # print 'a: ' + str(len(astar_array))
@@ -217,11 +159,11 @@ def create_astar_array(destination):
         if len(astar_array) == len(current_astar_array) and monkey_not_found:
             return (astar_array, 200000)
     # print "main list: " + str(astar_array)
-    return (astar_array, counter)
-    # import pdb; pdb.set_trace()
+    return astar_array
 
 
 def get_move():
+
     possible_moves_list = possible_moves()
     if len(possible_moves_list) > 0:
         move = min(possible_moves_list, key=lambda move: move[2])
@@ -268,15 +210,29 @@ def next_step(current_astar_array, counter):
     #    print current_astar_array
 
         for c in coordinates_around:
-     #       print str(c) + " -> " +  get_value_from_coordinate(c)
+            # if c[0] == current_position_of_monkey[0] and \
+            #         c[1] == current_position_of_monkey[1]:
+            # monkey_not_found = False
+            # else:
+            append_element_to_astar_array(c, counter)
+    return (monkey_not_found, astar_array)
 
-            #should only be appended if lower or equal counter
+def next_step2(current_astar_array, counter):
+    monkey_not_found = True
+    global astar_array
+    # print current_astar_array
+    for element in current_astar_array:
+        coordinates_around = get_coordinates_around((element[0], element[1]), True)
+    #    print current_astar_array
+
+        for c in coordinates_around:
             if c[0] == current_position_of_monkey[0] and \
                     c[1] == current_position_of_monkey[1]:
                 monkey_not_found = False
             else:
                 append_element_to_astar_array(c, counter)
     return (monkey_not_found, astar_array)
+
 
 
 def append_element_to_astar_array(coordinate, counter):
@@ -289,44 +245,48 @@ def append_element_to_astar_array(coordinate, counter):
             if element[2] >= counter:
                 #substitute for the new one
                 astar_array.remove(element)
-                astar_array.append(coordinate + (counter,))
+                astar_array.append(coordinate + \
+                    (counter, get_value_from_coordinate(coordinate)))
     else:
-        astar_array.append(coordinate + (counter,))
+        astar_array.append(coordinate + \
+            (counter, get_value_from_coordinate(coordinate)))
 
-def find_elements():
-    elements_to_visit = []
-    search_for = ["song", "album", "playlist"]
-    for destination in search_for:
-        for rIndex, row in enumerate(current_level_layout):
-            for cIndex, column in enumerate(row):
-                if column == destination:
-                    elements_to_visit.append(tuple([destination, (rIndex, cIndex)]))
-    print "elements_to_visit: " + str(elements_to_visit)
-    return elements_to_visit
 
-def find_users():
-    users_to_visit = []
-    search_for = ["user"]
-    for destination in search_for:
-        for rIndex, row in enumerate(current_level_layout):
-            for cIndex, column in enumerate(row):
-                if column == destination:
-                    users_to_visit.append(tuple([destination, (rIndex, cIndex)]))
-    print "users_to_visit: " + str(users_to_visit)
-    return users_to_visit
+def find_elements(search_for, game_board_map):
+    print 'search_for: ' + str(search_for)
+    for element in game_board_map:
+        for destination in search_for:
+                if element[3] == destination:
+                    return element
+    return None
+    
 
-def find_monkey():
-    monkey_to_visit = []
-    search_for = ["monkey"]
-    for destination in search_for:
-        for rIndex, row in enumerate(current_level_layout):
-            for cIndex, column in enumerate(row):
-                if column == destination:
-                    if not (current_position_of_monkey[0] == rIndex and
-                    current_position_of_monkey[1] == cIndex):
-                        monkey_to_visit.append(tuple([destination, (rIndex, cIndex)]))
-    print "monkey_to_visit: " + str(monkey_to_visit)
-    return monkey_to_visit
+
+
+# def find_users():
+#     users_to_visit = []
+#     search_for = ["user"]
+#     for destination in search_for:
+#         for rIndex, row in enumerate(current_level_layout):
+#             for cIndex, column in enumerate(row):
+#                 if column == destination:
+#                     users_to_visit.append(tuple([destination, (rIndex, cIndex)]))
+#     print "users_to_visit: " + str(users_to_visit)
+#     return users_to_visit
+
+
+# def find_monkey():
+#     monkey_to_visit = []
+#     search_for = ["monkey"]
+#     for destination in search_for:
+#         for rIndex, row in enumerate(current_level_layout):
+#             for cIndex, column in enumerate(row):
+#                 if column == destination:
+#                     if not (current_position_of_monkey[0] == rIndex and
+#                     current_position_of_monkey[1] == cIndex):
+#                         monkey_to_visit.append(tuple([destination, (rIndex, cIndex)]))
+#     print "monkey_to_visit: " + str(monkey_to_visit)
+#     return monkey_to_visit
 
 
 
