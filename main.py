@@ -68,6 +68,7 @@ current_game_state = post_to_server({'command': 'join game'})
 
 # The current game state tells you if you have any turns left
 while not current_game_state['isGameOver']:
+    print '##########################'
     print('Remaining turns: %d' % current_game_state['remainingTurns'])
 
     # Use your AI to decide in which direction to move...

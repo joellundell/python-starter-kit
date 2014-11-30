@@ -7,6 +7,7 @@ current_level_layout = None
 picked_up_music_items = None
 current_position_of_monkey = None
 
+
 def move(current_game_state):
     '''This is where you put your AI code!
 
@@ -14,7 +15,7 @@ def move(current_game_state):
     the monkey's next move.'''
 
     # Every game has a limited number of turns. Use every turn wisely!
-    remaining_number_of_turns = current_game_state['remainingTurns'] #current_game_state
+    remaining_number_of_turns = current_game_state['remainingTurns']
 
     # The level layout is a 2D-matrix (an array of arrays).
     #
@@ -121,7 +122,7 @@ def move(current_game_state):
     #
     # Got it? Sweet! This message will self destruct in five seconds...
 
-    print_game_board()
+    # print_game_board()
     # astar_arrays_list = []
     # for destination in find_elements():
     #     astar_arrays_list.append(create_astar_array(destination[1]))
@@ -141,10 +142,11 @@ def move(current_game_state):
             astar_arrays_list.append(create_astar_array(destination[1]))
         astar_array = getAstarArrayToGoTo(astar_arrays_list)
     else: #TODO: Spank the monkey 
-        astar_arrays_list = []
+        monkey_arrays_list = []
         for destination in find_monkey():
-            astar_arrays_list.append(create_astar_array(destination[1]))
-        astar_array = getAstarArrayToGoTo(astar_arrays_list)
+            print 'destination: ' + str(destination)
+            monkey_arrays_list.append(create_astar_array(destination[1]))
+        astar_array = getAstarArrayToGoTo(monkey_arrays_list)
 
 
     # astar_array = getAstarArrayToGoTo(astar_arrays_list)
@@ -153,7 +155,10 @@ def move(current_game_state):
 
     print "Moving: [" + move + "] towards [" + get_value_from_coordinate(astar_array[0][0:2]) + "] using: " + str(astar_array)
     # import pdb; pdb.set_trace()
-    return {'command': 'move',
+    if move == 'idle':
+        return {'command': 'idle'} 
+    else:
+        return {'command': 'move',
             'direction': move}
 
     # changes:
@@ -161,6 +166,7 @@ def move(current_game_state):
     # 2. get_coordinates_around takes a boolean that tells it whether it should consider
     #   the user something it can go to or not. So when there's still items left it 
     #   considers the user a "wall", something it has to go around
+
 
 def getAstarArrayToGoTo(astar_arrays_list):
     if len(astar_arrays_list) == 1:
@@ -190,6 +196,7 @@ def print_game_board():
     for row in current_level_layout:
         print row
 
+
 def create_astar_array(destination):
     monkey_not_found = True
     # print "User position: " + str(destination)
@@ -213,11 +220,14 @@ def create_astar_array(destination):
     return (astar_array, counter)
     # import pdb; pdb.set_trace()
 
+
 def get_move():
     possible_moves_list = possible_moves()
-    move = min(possible_moves_list, key=lambda move: move[2])
-    # print "move: " + str(move)
-    return get_one_direction(move)
+    if len(possible_moves_list) > 0:
+        move = min(possible_moves_list, key=lambda move: move[2])
+        return get_one_direction(move)
+    else:
+        return 'idle'
 
 def get_one_direction(move):
     # import pdb; pdb.set_trace()
@@ -343,6 +353,7 @@ def get_coordinates_around(coordinate, can_go_to_user):
    # print filtered_list
     #import pdb; pdb.set_trace()
     return filtered_list
+
 
 def get_value_from_coordinate(coordinate):
     return current_level_layout[coordinate[0]][coordinate[1]]
