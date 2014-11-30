@@ -73,7 +73,7 @@ while not current_game_state['isGameOver']:
 
     # Use your AI to decide in which direction to move...
     next_command = ai.move(current_game_state)
-
+    print 'next_command: ' + str(next_command)
     # After sending your next move, you'll get the new game state back
     current_game_state = post_to_server(next_command)
 

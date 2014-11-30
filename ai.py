@@ -1,7 +1,5 @@
 import random
 
-astar_array = []
-
 remaining_number_of_turns = None
 current_level_layout = None
 picked_up_music_items = None
@@ -57,7 +55,6 @@ def move(current_game_state):
     global score
     score = current_game_state['score']
 
-    global astar_array
 
     game_board_map = map_game_board(current_position_of_monkey)
 
@@ -67,13 +64,14 @@ def move(current_game_state):
         destination = find_elements(["song", "album", "playlist"], game_board_map)
     else: #TODO: Spank the monkey 
         destination = find_elements(["monkey"], game_board_map)
-
+    
+    print 'destination: ' + str(destination)
     if destination:
-        create_astar_array(destination)
+        astar_array = create_astar_array(destination)
     else:
         return {'command': 'idle'} 
     # astar_array = getAstarArrayToGoTo(astar_arrays_list)
-    move = get_move()
+    move = get_move(astar_array)
 
     print "Moving: [" + move + "] towards [" + get_value_from_coordinate(astar_array[0][0:2]) + "] using: " + str(astar_array)
     # import pdb; pdb.set_trace()
@@ -122,7 +120,6 @@ def print_game_board():
 def map_game_board(monkey_position):
     monkey_not_found = True
     counter = 0
-    global astar_array
     astar_array = []
 
     astar_array.append(monkey_position + (counter, get_value_from_coordinate(monkey_position)))
@@ -140,31 +137,82 @@ def map_game_board(monkey_position):
 
 
 def create_astar_array(destination):
+    print_game_board()
     monkey_not_found = True
     # print "User position: " + str(destination)
     # print "Monkey position: " + str(current_position_of_monkey)
     counter = 0
-    global astar_array
     astar_array = []
-    astar_array.append(destination + (counter,))
-
+    destination_coordinates = (destination[0], destination[1])
+    astar_array.append(destination_coordinates + \
+            (counter, get_value_from_coordinate(destination_coordinates)))
     while monkey_not_found:
         counter += 1
-        current_astar_array = list(astar_array)
-        result = next_step2(current_astar_array, counter)
+
+        result = next_step2(astar_array, counter)
         monkey_not_found = result[0]
         astar_array = result[1]
         # print 'a: ' + str(len(astar_array))
         # print 'c: ' + str(len(current_astar_array))
-        if len(astar_array) == len(current_astar_array) and monkey_not_found:
-            return (astar_array, 200000)
+        
+        #if len(astar_array) == len(current_astar_array) and monkey_not_found:
+         #   return (astar_array, 200000)
+          ######## MIGHT NEED TO DO SOMETHING HERE TO HANDLE THINGS INSIDE WALLS AND WITH LOCKED DOORS  
     # print "main list: " + str(astar_array)
     return astar_array
 
 
-def get_move():
+def next_step(current_astar_array, counter):
+    monkey_not_found = True
+    # print current_astar_array
+    for element in current_astar_array:
+        coordinates_around = get_coordinates_around((element[0], element[1]), ['wall', 'closed-door'])
+    #    print current_astar_array
+        for c in coordinates_around:
+            # if c[0] == current_position_of_monkey[0] and \
+            #         c[1] == current_position_of_monkey[1]:
+            # monkey_not_found = False
+            # else:
+            current_astar_array = append_element_to_astar_array(c, counter, current_astar_array)
+    return (monkey_not_found, current_astar_array)
 
-    possible_moves_list = possible_moves()
+
+def next_step2(current_astar_array, counter):
+    monkey_not_found = True
+    # print current_astar_array
+    existing_elements = list(current_astar_array)
+    for element in existing_elements:
+        coordinates_around = get_coordinates_around((element[0], element[1]), ['wall', 'closed-door'])
+    #    print current_astar_array
+        for c in coordinates_around:
+            if c[0] == current_position_of_monkey[0] and \
+                    c[1] == current_position_of_monkey[1]:
+                monkey_not_found = False
+            else:
+                current_astar_array = append_element_to_astar_array(c, counter, current_astar_array)
+    return (monkey_not_found, current_astar_array)
+
+
+def append_element_to_astar_array(coordinate, counter, current_astar_array):
+    existingElements = [element for element in current_astar_array if \
+            element[0] == coordinate[0] and element[1] == coordinate[1]]
+    # print str(existingElements)
+    if len(existingElements) > 0:
+        for element in existingElements:
+            if element[2] >= counter:
+                #substitute for the new one
+                current_astar_array.remove(element)
+                current_astar_array.append(coordinate + \
+                    (counter, get_value_from_coordinate(coordinate)))
+    else:
+        current_astar_array.append(coordinate + \
+            (counter, get_value_from_coordinate(coordinate)))
+    return current_astar_array
+
+
+def get_move(astar_array):
+
+    possible_moves_list = possible_moves(astar_array)
     if len(possible_moves_list) > 0:
         move = min(possible_moves_list, key=lambda move: move[2])
         return get_one_direction(move)
@@ -184,72 +232,28 @@ def get_one_direction(move):
         return "down"
 
 
-def possible_moves():
-    global astar_array
+def possible_moves(astar_array):
+    print 'astar_array: ' + str(astar_array)
+    print 'game_board_map'
     goalcoordinate = astar_array[0][0:2]
     can_go_to_user = get_value_from_coordinate(goalcoordinate) == "user"
-    possible_moves = [move for move in astar_array if move_is_possible(move, can_go_to_user)]
+    print 'goalcoordinate: ' + str(goalcoordinate)
+    print 'can_go_to_user: ' + str(can_go_to_user)
+    if can_go_to_user:
+        avoid = ['wall', 'closed-door', 'song', 'album', 'playlist', 'banana', 'trap']
+    else:
+        avoid = ['wall', 'closed-door', 'user']
+    possible_moves = [move for move in astar_array if move_is_possible(move, avoid)]
     print "possible_moves: " + str(possible_moves)
     return possible_moves
 
 
-def move_is_possible(move, can_go_to_user):
-    coordinates_around = get_coordinates_around(current_position_of_monkey, can_go_to_user)
+def move_is_possible(move, avoid):
+    coordinates_around = get_coordinates_around(current_position_of_monkey, avoid)
     for c in coordinates_around:
         if c[0] == move[0] and c[1] == move[1]:
             return True
     return False
-
-
-def next_step(current_astar_array, counter):
-    monkey_not_found = True
-    global astar_array
-    # print current_astar_array
-    for element in current_astar_array:
-        coordinates_around = get_coordinates_around((element[0], element[1]), True)
-    #    print current_astar_array
-
-        for c in coordinates_around:
-            # if c[0] == current_position_of_monkey[0] and \
-            #         c[1] == current_position_of_monkey[1]:
-            # monkey_not_found = False
-            # else:
-            append_element_to_astar_array(c, counter)
-    return (monkey_not_found, astar_array)
-
-def next_step2(current_astar_array, counter):
-    monkey_not_found = True
-    global astar_array
-    # print current_astar_array
-    for element in current_astar_array:
-        coordinates_around = get_coordinates_around((element[0], element[1]), True)
-    #    print current_astar_array
-
-        for c in coordinates_around:
-            if c[0] == current_position_of_monkey[0] and \
-                    c[1] == current_position_of_monkey[1]:
-                monkey_not_found = False
-            else:
-                append_element_to_astar_array(c, counter)
-    return (monkey_not_found, astar_array)
-
-
-
-def append_element_to_astar_array(coordinate, counter):
-    global astar_array
-    existingElements = [element for element in astar_array if \
-            element[0] == coordinate[0] and element[1] == coordinate[1]]
-    # print str(existingElements)
-    if len(existingElements) > 0:
-        for element in existingElements:
-            if element[2] >= counter:
-                #substitute for the new one
-                astar_array.remove(element)
-                astar_array.append(coordinate + \
-                    (counter, get_value_from_coordinate(coordinate)))
-    else:
-        astar_array.append(coordinate + \
-            (counter, get_value_from_coordinate(coordinate)))
 
 
 def find_elements(search_for, game_board_map):
@@ -261,55 +265,17 @@ def find_elements(search_for, game_board_map):
     return None
     
 
-
-
-# def find_users():
-#     users_to_visit = []
-#     search_for = ["user"]
-#     for destination in search_for:
-#         for rIndex, row in enumerate(current_level_layout):
-#             for cIndex, column in enumerate(row):
-#                 if column == destination:
-#                     users_to_visit.append(tuple([destination, (rIndex, cIndex)]))
-#     print "users_to_visit: " + str(users_to_visit)
-#     return users_to_visit
-
-
-# def find_monkey():
-#     monkey_to_visit = []
-#     search_for = ["monkey"]
-#     for destination in search_for:
-#         for rIndex, row in enumerate(current_level_layout):
-#             for cIndex, column in enumerate(row):
-#                 if column == destination:
-#                     if not (current_position_of_monkey[0] == rIndex and
-#                     current_position_of_monkey[1] == cIndex):
-#                         monkey_to_visit.append(tuple([destination, (rIndex, cIndex)]))
-#     print "monkey_to_visit: " + str(monkey_to_visit)
-#     return monkey_to_visit
-
-
-
-def get_coordinates_around(coordinate, can_go_to_user):
+def get_coordinates_around(coordinate, avoid):
     # print "get coordinates for: " + str(coordinate)
     coordinates_around =  [(coordinate[0] - 1,  coordinate[1]),
         (coordinate[0] + 1, coordinate[1]),
         (coordinate[0], coordinate[1] - 1),
         (coordinate[0], coordinate[1] + 1)]
    # print "surrounding coordinates: " + str(coordinates_around)
-    if can_go_to_user: 
-        filtered_list = [c for c in coordinates_around if c[0] >= 0 and 
-                c[0] < len(current_level_layout) and c[1] >= 0 and 
-                c[1] < len(current_level_layout[0]) and 
-                get_value_from_coordinate(c) != "wall" and
-                get_value_from_coordinate(c) != "closed-door"]
-    else:
-        filtered_list = [c for c in coordinates_around if c[0] >= 0 and 
-                c[0] < len(current_level_layout) and c[1] >= 0 and 
-                c[1] < len(current_level_layout[0]) and 
-                get_value_from_coordinate(c) != "wall" and
-                get_value_from_coordinate(c) != "closed-door" and
-                get_value_from_coordinate(c) != "user"]
+    filtered_list = [c for c in coordinates_around if c[0] >= 0 and 
+            c[0] < len(current_level_layout) and c[1] >= 0 and 
+            c[1] < len(current_level_layout[0]) and 
+            get_value_from_coordinate(c) not in avoid]
    # print filtered_list
     #import pdb; pdb.set_trace()
     return filtered_list
