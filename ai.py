@@ -1,5 +1,6 @@
 import random
-
+score = None
+inventory = None
 current_level_layout = None
 picked_up_music_items = None
 current_position_of_monkey = None
@@ -8,6 +9,7 @@ current_position_of_monkey = None
 def move(current_game_state):
     global current_position_of_monkey
     global current_level_layout
+    global inventory_is_full
     global inventory_size
     global inventory
     global score
@@ -17,14 +19,21 @@ def move(current_game_state):
     inventory = current_game_state['inventory']
     score = current_game_state['score']
 
+    inventory_is_full =len(inventory) >= inventory_size
+
     # Map the game board and get the distance to everything on the map
     game_board_map = map_game_board(current_position_of_monkey)
     # print 'game_board_map: ' + str(game_board_map)
 
-    # Decide what to do, wheter it is to go to the user och collect something
-    if len(inventory) >= inventory_size: # Inventory full, go to closest user
+    ## Decide what to do, wheter it is to go to the user och collect something
+    # Strategy:
+    # If no points - get a point then spank the monkey till inventory is full
+    # when inventory is full, get more points
+    # When number of moves left is ecual to distance to closest user, go to hen
+
+    if inventory_is_full: # Inventory full, go to closest user
         destination = find_destination(["user"], game_board_map)
-    elif True: # Go pick up something
+    elif False: # Go pick up something
         destination = find_destination(["song", "album", "playlist"], 
             game_board_map)
     else: #TODO: Spank the monkey 
@@ -106,35 +115,24 @@ def map_game_board(monkey_position):
 
 
 def create_astar_array(destination):
-    monkey_not_found = True
-    counter = 0
     astar_array = []
     destination_coordinates = (destination[0], destination[1])
-    astar_array.append(destination_coordinates + (counter,
+    astar_array.append(destination_coordinates + (0,
         get_value_from_coordinate(destination_coordinates)))
-    while monkey_not_found:
-        counter += 1
-        result = next_step(astar_array, counter)
-        monkey_not_found = result[0]
-        astar_array = result[1]
-    return astar_array
-
-
-def next_step(current_astar_array, counter):
-    monkey_not_found = True
-    # print current_astar_array
-    existing_elements = list(current_astar_array)
-    for element in existing_elements:
+    for element in astar_array:
         coordinates_around = get_coordinates_around((element[0], element[1]), 
             ['wall', 'closed-door'])
+        
+        # coordinates_around have +1 in dictance
+        counter = element[2] + 1   
         for c in coordinates_around:
             if (c[0] == current_position_of_monkey[0] and 
                 c[1] == current_position_of_monkey[1]):
                 monkey_not_found = False
             else:
-                current_astar_array = append_element_to_astar_array(c, counter,
-                 current_astar_array)
-    return (monkey_not_found, current_astar_array)
+                astar_array = append_element_to_astar_array(c, counter,
+                 astar_array)
+    return astar_array
 
 
 # careful when changing, map_game_board() and create_astar_array() use this
@@ -180,10 +178,8 @@ def get_one_direction(move):
 def possible_moves(astar_array):
     # print 'astar_array: ' + str(astar_array)
     goalcoordinate = astar_array[0][0:2]
-    can_go_to_user = get_value_from_coordinate(goalcoordinate) == "user"
     print 'goalcoordinate: ' + str(goalcoordinate)
-    print 'can_go_to_user: ' + str(can_go_to_user)
-    if can_go_to_user:
+    if inventory_is_full:
         avoid = ['wall', 'closed-door', 'song', 'album', 'playlist', 'banana', 'trap']
     else:
         avoid = ['wall', 'closed-door', 'user']
