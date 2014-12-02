@@ -33,9 +33,12 @@ def move(current_game_state):
 
     if inventory_is_full: # Inventory full, go to closest user
         destination = find_destination(["user"], game_board_map)
-    elif False: # Go pick up something
-        destination = find_destination(["song", "album", "playlist"], 
-            game_board_map)
+    elif score <= 0: # if score is less than 1, get some!
+        if len(inventory) <= 0: # Go pick up something
+            destination = find_destination(["song", "album", "playlist"], 
+                game_board_map)
+        else: # then return it to user
+            destination = find_destination(["user"], game_board_map)
     else: #TODO: Spank the monkey 
         destination = find_destination(["monkey"], game_board_map)
 
@@ -179,10 +182,13 @@ def possible_moves(astar_array):
     # print 'astar_array: ' + str(astar_array)
     goalcoordinate = astar_array[0][0:2]
     print 'goalcoordinate: ' + str(goalcoordinate)
+    going_to_user = get_value_from_coordinate(goalcoordinate) == "user"
     if inventory_is_full:
         avoid = ['wall', 'closed-door', 'song', 'album', 'playlist', 'banana', 'trap']
     else:
         avoid = ['wall', 'closed-door', 'user']
+        if going_to_user:
+            avoid.remove('user')
     possible_moves = [move for move in astar_array if move_is_possible(move, avoid)]
     print "possible_moves: " + str(possible_moves)
     return possible_moves
