@@ -4,16 +4,18 @@ inventory = None
 current_level_layout = None
 picked_up_music_items = None
 current_position_of_monkey = None
-
+remaining_turns = None
 
 def move(current_game_state):
     global current_position_of_monkey
     global current_level_layout
     global inventory_is_full
+    global remaining_turns
     global inventory_size
     global inventory
     global score
     current_position_of_monkey = tuple(current_game_state['position'])
+    remaining_turns = current_game_state['remainingTurns']
     inventory_size = current_game_state['inventorySize']
     current_level_layout = current_game_state['layout']
     inventory = current_game_state['inventory']
@@ -112,7 +114,6 @@ def map_game_board(monkey_position):
         counter = element[2] + 1   
         for c in coordinates_around:
             game_board_map = append_element_to_astar_array(c,
-
                 counter, game_board_map)
     return game_board_map
 
