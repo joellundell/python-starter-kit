@@ -24,7 +24,7 @@ def move(current_game_state):
     inventory_is_full =len(inventory) >= inventory_size
 
     # Map the game board and get the distance to everything on the map
-    game_board_map = map_game_board(current_position_of_monkey)
+    game_board_map = create_map_from(current_position_of_monkey, None)
     # print 'game_board_map: ' + str(game_board_map)
 
     ## Decide what to do, wheter it is to go to the user och collect something
@@ -45,12 +45,13 @@ def move(current_game_state):
         destination = find_destination(["monkey"], game_board_map)
 
     # Create the path to the destination
-    if destination:
-        astar_array = create_astar_array(destination)
+    if destination is not None:
+        astar_array = create_map_from(destination, current_position_of_monkey)
     else:
         print 'Error: destination is: ' + str(destination)
         print '       returning: idle'
         return {'command': 'idle'} 
+   # import pdb; pdb.set_trace()
     move = get_move(astar_array)
 
     ## Print interestion stuff here
@@ -62,8 +63,9 @@ def move(current_game_state):
     print ("Moving: [" + move + "] towards [" +
         get_value_from_coordinate(astar_array[0][0:2]) +
         "] using: " + str(astar_array))
-    # import pdb; pdb.set_trace()
 
+
+    # import pdb; pdb.set_trace()
     # Return next command
     if move == 'idle':
         return {'command': 'idle'}
@@ -73,9 +75,9 @@ def move(current_game_state):
 
 
 def find_destination(search_for, game_board_map):
-    print 'search_for: ' + str(search_for)
     possible_destinations = []
     for element in game_board_map:
+        #print "element:" + str(element) + " looking for: " + str(search_for)
         for destination in search_for:
                 if element[3] == destination:
                     possible_destinations.append(element)
@@ -132,11 +134,35 @@ def create_astar_array(destination):
         for c in coordinates_around:
             if (c[0] == current_position_of_monkey[0] and
                 c[1] == current_position_of_monkey[1]):
+                print "found monkey"
             else:
                 astar_array = append_element_to_astar_array(c, counter,
                  astar_array)
     return astar_array
 
+def create_map_from(coordinate, stop_at):
+    astar_array = []
+    destination_coordinates = (coordinate[0], coordinate[1])
+    astar_array.append(destination_coordinates + (0,
+        get_value_from_coordinate(destination_coordinates)))
+    for element in astar_array:
+        coordinates_around = get_coordinates_around((element[0], element[1]), 
+            ['wall', 'closed-door'])
+
+        # coordinates_around have +1 in dictance
+        counter = element[2] + 1
+        for c in coordinates_around:
+            if stop_at is not None:
+                if (c[0] == current_position_of_monkey[0] and
+                    c[1] == current_position_of_monkey[1]):
+                    print "found monkey"
+                else:
+                    astar_array = append_element_to_astar_array(c, counter,
+                                                                astar_array)
+            else:
+                astar_array = append_element_to_astar_array(c, counter,
+                                                            astar_array)
+    return astar_array
 
 # careful when changing, map_game_board() and create_astar_array() use this
 def append_element_to_astar_array(coordinate, counter, current_astar_array):
