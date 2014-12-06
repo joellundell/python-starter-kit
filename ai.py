@@ -60,13 +60,13 @@ def move(current_game_state):
     # print 'inventory_size: ' + str(inventory_size)
     # print_game_board()
     print ("Moving: [" + move + "] towards [" +
-        get_value_from_coordinate(astar_array[0][0:2]) + 
+        get_value_from_coordinate(astar_array[0][0:2]) +
         "] using: " + str(astar_array))
     # import pdb; pdb.set_trace()
 
     # Return next command
     if move == 'idle':
-        return {'command': 'idle'} 
+        return {'command': 'idle'}
     else:
         return {'command': 'move',
             'direction': move}
@@ -82,10 +82,10 @@ def find_destination(search_for, game_board_map):
     if len(possible_destinations) > 0:
 
         if search_for[0] == 'monkey':
-            destination = max(possible_destinations, 
+            destination = max(possible_destinations,
                 key=lambda destination: destination[2])
         else:
-            destination = min(possible_destinations, 
+            destination = min(possible_destinations,
                 key=lambda destination: destination[2])
     else:
         return None
@@ -126,13 +126,12 @@ def create_astar_array(destination):
     for element in astar_array:
         coordinates_around = get_coordinates_around((element[0], element[1]), 
             ['wall', 'closed-door'])
-        
+
         # coordinates_around have +1 in dictance
-        counter = element[2] + 1   
+        counter = element[2] + 1
         for c in coordinates_around:
-            if (c[0] == current_position_of_monkey[0] and 
+            if (c[0] == current_position_of_monkey[0] and
                 c[1] == current_position_of_monkey[1]):
-                monkey_not_found = False
             else:
                 astar_array = append_element_to_astar_array(c, counter,
                  astar_array)
@@ -141,7 +140,7 @@ def create_astar_array(destination):
 
 # careful when changing, map_game_board() and create_astar_array() use this
 def append_element_to_astar_array(coordinate, counter, current_astar_array):
-    existingElements = [element for element in current_astar_array if 
+    existingElements = [element for element in current_astar_array if
             element[0] == coordinate[0] and element[1] == coordinate[1]]
     # print str(existingElements)
     if len(existingElements) > 0:
@@ -153,7 +152,7 @@ def append_element_to_astar_array(coordinate, counter, current_astar_array):
                     get_value_from_coordinate(coordinate)))
     else:
         current_astar_array.append(coordinate + (counter,
-            get_value_from_coordinate(coordinate)))
+                                   get_value_from_coordinate(coordinate)))
     return current_astar_array
 
 
