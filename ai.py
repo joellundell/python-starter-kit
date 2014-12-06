@@ -1,5 +1,6 @@
 import random
 score = None
+buffs = None
 inventory = None
 current_level_layout = None
 picked_up_music_items = None
@@ -13,12 +14,14 @@ def move(current_game_state):
     global remaining_turns
     global inventory_size
     global inventory
+    global buffs
     global score
     current_position_of_monkey = tuple(current_game_state['position'])
     remaining_turns = current_game_state['remainingTurns']
     inventory_size = current_game_state['inventorySize']
     current_level_layout = current_game_state['layout']
     inventory = current_game_state['inventory']
+    buffs = current_game_state['buffs']
     score = current_game_state['score']
 
     inventory_is_full =len(inventory) >= inventory_size
@@ -32,17 +35,28 @@ def move(current_game_state):
     # If no points - get a point then spank the monkey till inventory is full
     # when inventory is full, get more points
     # When number of moves left is ecual to distance to closest user, go to hen
-
+    
+    ## only for banana test
     if inventory_is_full: # Inventory full, go to closest user
         destination = find_destination(["user"], game_board_map)
-    elif score <= 0: # if score is less than 1, get some!
-        if len(inventory) <= 0: # Go pick up something
-            destination = find_destination(["song", "album", "playlist"], 
+    else:
+        destination = find_destination(["song", "album", "playlist", "banana"], 
                 game_board_map)
-        else: # then return it to user
-            destination = find_destination(["user"], game_board_map)
-    else: #TODO: Spank the monkey 
-        destination = find_destination(["monkey"], game_board_map)
+
+    if "banana" in inventory and "speedy" not in buffs:
+        return {"command": "use", "item": "banana"}
+
+    ## Real game strategy here:
+    # if inventory_is_full: # Inventory full, go to closest user
+    #     destination = find_destination(["user"], game_board_map)
+    # elif score <= 0: # if score is less than 1, get some!
+    #     if len(inventory) <= 0: # Go pick up something
+    #         destination = find_destination(["song", "album", "playlist", "banana"], 
+    #             game_board_map)
+    #     else: # then return it to user
+    #         destination = find_destination(["user"], game_board_map)
+    # else: #TODO: Spank the monkey 
+    #     destination = find_destination(["monkey"], game_board_map)
 
     # Create the path to the destination
     if destination:
@@ -51,7 +65,11 @@ def move(current_game_state):
         print 'Error: destination is: ' + str(destination)
         print '       returning: idle'
         return {'command': 'idle'} 
-    move = get_move(astar_array)
+    move = get_move(astar_array, current_position_of_monkey)
+    direction = get_one_direction(move, current_position_of_monkey)
+    if 'speedy' in buffs:
+        move_2 = get_move(astar_array, move)
+        direction_2 = get_one_direction(move_2, move)
 
     ## Print interestion stuff here
     print 'destination: ' + str(destination)
@@ -59,18 +77,22 @@ def move(current_game_state):
     # print 'inventory: ' + str(inventory)
     # print 'inventory_size: ' + str(inventory_size)
     # print_game_board()
-    print ("Moving: [" + move + "] towards [" +
+    print ("Moving: [" + direction + "] towards [" +
         get_value_from_coordinate(astar_array[0][0:2]) +
         "] using: " + str(astar_array))
     # import pdb; pdb.set_trace()
 
     # Return next command
-    if move == 'idle':
+    if direction == 'idle':
         return {'command': 'idle'}
     else:
-        return {'command': 'move',
-            'direction': move}
-
+        if 'speedy' not in buffs:
+            return {'command': 'move', 
+                    'direction': direction}
+        else:
+            print 'Directions: ' + str(direction) + ' and ' + str(direction_2) 
+            return {'command': 'move', 
+                    'directions': [direction, direction_2]}
 
 def find_destination(search_for, game_board_map):
     print 'search_for: ' + str(search_for)
@@ -132,6 +154,7 @@ def create_astar_array(destination):
         for c in coordinates_around:
             if (c[0] == current_position_of_monkey[0] and
                 c[1] == current_position_of_monkey[1]):
+                1+1
             else:
                 astar_array = append_element_to_astar_array(c, counter,
                  astar_array)
@@ -156,29 +179,29 @@ def append_element_to_astar_array(coordinate, counter, current_astar_array):
     return current_astar_array
 
 
-def get_move(astar_array):
-    possible_moves_list = possible_moves(astar_array)
+def get_move(astar_array, from_coordinate):
+    possible_moves_list = possible_moves(astar_array, from_coordinate)
     if len(possible_moves_list) > 0:
         move = min(possible_moves_list, key=lambda move: move[2])
-        return get_one_direction(move)
+        return move
     else:
         return 'idle'
 
 
-def get_one_direction(move):
+def get_one_direction(move, from_coordinate):
     # import pdb; pdb.set_trace()
-    if move[0] == current_position_of_monkey[0]:
-        if current_position_of_monkey[1] - move[1] > 0:
+    if move[0] == from_coordinate[0]:
+        if from_coordinate[1] - move[1] > 0:
             return "left"
         else:
             return "right"
-    elif current_position_of_monkey[0] - move[0] > 0:
+    elif from_coordinate[0] - move[0] > 0:
         return "up"
     else:
         return "down"
 
 
-def possible_moves(astar_array):
+def possible_moves(astar_array, from_coordinate):
     # print 'astar_array: ' + str(astar_array)
     goalcoordinate = astar_array[0][0:2]
     print 'goalcoordinate: ' + str(goalcoordinate)
@@ -189,13 +212,13 @@ def possible_moves(astar_array):
         avoid = ['wall', 'closed-door', 'user']
         if going_to_user:
             avoid.remove('user')
-    possible_moves = [move for move in astar_array if move_is_possible(move, avoid)]
+    possible_moves = [move for move in astar_array if move_is_possible(move, avoid, from_coordinate)]
     print "possible_moves: " + str(possible_moves)
     return possible_moves
 
 
-def move_is_possible(move, avoid):
-    coordinates_around = get_coordinates_around(current_position_of_monkey, avoid)
+def move_is_possible(move, avoid, from_coordinate):
+    coordinates_around = get_coordinates_around(from_coordinate, avoid)
     for c in coordinates_around:
         if c[0] == move[0] and c[1] == move[1]:
             return True
