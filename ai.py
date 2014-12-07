@@ -62,7 +62,8 @@ def move(current_game_state):
         destination = close_item
     if destination is None:
         if (inventory_is_full or (dictance_to_user < 3 and points_in_inventory >= 1)
-                    or (remaining_turns - 3 <= dictance_to_user and points_in_inventory >= 1)):
+                or (remaining_turns - 3 <= dictance_to_user and points_in_inventory >= 1)
+                or points_in_inventory > 5):
  
             destination = find_destination(["user"], game_board_map)
         elif score <= 0: # if score is less than 1, get some!
