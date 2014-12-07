@@ -58,7 +58,10 @@ def move(current_game_state):
 
     destination = None
     if not inventory_is_full:
-        close_item = get_destination_if_less_than([("playlist", 2), ("banana", 2), ("album", 1), ("song", 1)], game_board_map)
+        if "speedy" in buffs:
+            close_item = get_destination_if_less_than([("playlist", 4), ("album", 2)], game_board_map)
+        else:
+            close_item = get_destination_if_less_than([("playlist", 2), ("banana", 2), ("album", 1), ("song", 1)], game_board_map)
         destination = close_item
     if destination is None:
         if (inventory_is_full or (dictance_to_user < 3 and points_in_inventory >= 1)
