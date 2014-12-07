@@ -36,15 +36,17 @@ def move(current_game_state):
     # when inventory is full, get more points
     # When number of moves left is ecual to distance to closest user, go to hen
     
+    ## Dictande to user:
+    closest_user = destination = find_destination(["user"], game_board_map)
+    dictance_to_user = closest_user[2]
+
+
     ## only for banana test
-    if inventory_is_full: # Inventory full, go to closest user
+    if inventory_is_full or (dictance_to_user < 3 and len(inventory) >= 1): # Inventory full, go to closest user
         destination = find_destination(["user"], game_board_map)
     else:
-        destination = find_destination(["song", "album", "playlist", "banana"], 
+        destination = find_destination(["song", "album", "playlist", "banana", "trap"], 
                 game_board_map)
-
-    if "banana" in inventory and "speedy" not in buffs:
-        return {"command": "use", "item": "banana"}
 
     ## Real game strategy here:
     # if inventory_is_full: # Inventory full, go to closest user
@@ -65,6 +67,14 @@ def move(current_game_state):
         print 'Error: destination is: ' + str(destination)
         print '       returning: idle'
         return {'command': 'idle'} 
+    
+
+    if "banana" in inventory and "speedy" not in buffs:
+        return {"command": "use", "item": "banana"}
+    if ("trap" in inventory and dictance_to_user <= 1):
+        return {"command": "use", "item": "trap"}
+
+
     move = get_move(astar_array, current_position_of_monkey)
     direction = get_one_direction(move, current_position_of_monkey)
     if 'speedy' in buffs:
