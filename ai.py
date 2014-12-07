@@ -48,13 +48,18 @@ def move(current_game_state):
     if "banana" in inventory and "speedy" not in buffs:
         return {"command": "use", "item": "banana"}
 
+    points_in_inventory = 0
+    points_in_inventory = get_points_in_inventory()
+    print 'points_in_inventory: ' + str(points_in_inventory)
+    print 'go home: ' + str(remaining_turns) + ' < ' + str(dictance_to_user)
+    print 'go home: ' + str(remaining_turns - 3 <= dictance_to_user)
     # Real game strategy here:
-    if (inventory_is_full or (dictance_to_user < 3 and len(inventory) >= 1)
-            or (remaining_turns + 2 >= dictance_to_user and len(inventory) >= 1)):
-        #inventory full, close to user or soon end of game
+    if (inventory_is_full or (dictance_to_user < 3 and points_in_inventory >= 1)
+            or (remaining_turns - 3 <= dictance_to_user and points_in_inventory >= 1)):
+        
         destination = find_destination(["user"], game_board_map)
     elif score <= 0: # if score is less than 1, get some!
-        if len(inventory) <= 0: # Go pick up something
+        if points_in_inventory <= 1: # Go pick up something
             destination = find_destination(["song", "album", "playlist", "banana", "trap"], 
                 game_board_map)
         else: # then return it to user
@@ -263,3 +268,16 @@ def get_value_from_coordinate(coordinate):
 
 def is_coordinates_equal(coordinate1, coordinate2):
     return coordinate1[0] == coordinate2[0] and coordinate1[1] == coordinate2[1]
+
+def get_points_in_inventory():
+    points_in_inventory = 0
+    for item_type in inventory:
+        if item_type == 'song':
+            points_in_inventory += 1
+        elif item_type == 'album':
+            points_in_inventory += 2
+        elif item_type == 'playlist':
+            points_in_inventory += 4
+    return points_in_inventory
+
+
