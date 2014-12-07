@@ -48,23 +48,81 @@ def move(current_game_state):
     if "banana" in inventory and "speedy" not in buffs:
         return {"command": "use", "item": "banana"}
 
+    points_in_inventory = 0
+    points_in_inventory = get_points_in_inventory()
+    print 'points_in_inventory: ' + str(points_in_inventory)
+    print 'go home: ' + str(remaining_turns) + ' < ' + str(dictance_to_user)
+    print 'go home: ' + str(remaining_turns - 3 <= dictance_to_user)
     # Real game strategy here:
+
+
+    destination = None
     if not inventory_is_full:
-        close_item = get_destination_if_less_than([("playlist", 2), ("banana", 1), ("album", 1)], game_board_map)
+        close_item = get_destination_if_less_than([("playlist", 2), ("banana", 2), ("album", 1), ("song", 1)], game_board_map)
         destination = close_item
     if destination is None:
-        if (inventory_is_full or (dictance_to_user < 3 and len(inventory) >= 1)
-                or (remaining_turns + 2 >= dictance_to_user and len(inventory) >= 1)):
-            #inventory full, close to user or soon end of game
+        if (inventory_is_full or (dictance_to_user < 3 and points_in_inventory >= 1)
+                    or (remaining_turns - 3 <= dictance_to_user and points_in_inventory >= 1)):
+ 
             destination = find_destination(["user"], game_board_map)
         elif score <= 0: # if score is less than 1, get some!
-            if len(inventory) <= 0: # Go pick up something
-                destination = find_destination(["song", "album", "playlist", "banana", "trap"], 
-                    game_board_map)
+            if points_in_inventory <= 1: # Go pick up something
+                destination = find_destination(["song", "album", "playlist", "banana", "trap"], game_board_map)
             else: # then return it to user
                 destination = find_destination(["user"], game_board_map)
         else: #TODO: Spank the monkey 
             destination = find_destination(["monkey"], game_board_map)
+
+#    if (inventory_is_full or (dictance_to_user < 3 and points_in_inventory >= 1)
+#            or (remaining_turns - 3 <= dictance_to_user and points_in_inventory >= 1)):
+#        
+#        destination = find_destination(["user"], game_board_map)
+#    elif score <= 0: # if score is less than 1, get some!
+#        if points_in_inventory <= 1: # Go pick up something
+#            destination = find_destination(["song", "album", "playlist", "banana", "trap"], 
+#                game_board_map)
+#        else: # then return it to user
+#>>>>>>> smarter_master
+#            destination = find_destination(["user"], game_board_map)
+#        elif score <= 1: # if score is less than 1, get some!
+#            if len(inventory) <= 0: # Go pick up something
+#                destination = find_destination(["song", "album", "playlist", "banana", "trap"], 
+#                    game_board_map)
+#            else: # then return it to user
+#                destination = find_destination(["user"], game_board_map)
+#        else: #TODO: Spank the monkey 
+#            destination = find_destination(["monkey"], game_board_map)
+#
+#
+#
+#<<<<<<< HEAD
+#    if not inventory_is_full:
+#        close_item = get_destination_if_less_than([("playlist", 2), ("banana", 1), ("album", 1)], game_board_map)
+#        destination = close_item
+#    if destination is None:
+#        if (inventory_is_full or (dictance_to_user < 3 and len(inventory) >= 1)
+#                or (remaining_turns + 2 >= dictance_to_user and len(inventory) >= 1)):
+#            #inventory full, close to user or soon end of game
+#=======
+#    if (inventory_is_full or (dictance_to_user < 3 and points_in_inventory >= 1)
+#            or (remaining_turns - 3 <= dictance_to_user and points_in_inventory >= 1)):
+#        
+#        destination = find_destination(["user"], game_board_map)
+#    elif score <= 0: # if score is less than 1, get some!
+#        if points_in_inventory <= 1: # Go pick up something
+#            destination = find_destination(["song", "album", "playlist", "banana", "trap"], 
+#                game_board_map)
+#        else: # then return it to user
+#>>>>>>> smarter_master
+#            destination = find_destination(["user"], game_board_map)
+#        elif score <= 1: # if score is less than 1, get some!
+#            if len(inventory) <= 0: # Go pick up something
+#                destination = find_destination(["song", "album", "playlist", "banana", "trap"], 
+#                    game_board_map)
+#            else: # then return it to user
+#                destination = find_destination(["user"], game_board_map)
+#        else: #TODO: Spank the monkey 
+#            destination = find_destination(["monkey"], game_board_map)
 
     # Create the path to the destination
     if destination is not None:
@@ -105,11 +163,8 @@ def move(current_game_state):
 def get_destination_if_less_than(search_for, game_board_map):
     # element of type (item, max distance)
     for element in search_for:
-        print "looking for smart stuff... in:  "
         close_item = find_destination([element[0]], game_board_map)
-        print "looking for: " + str(element) + " found: " + str(close_item)
         if close_item is not None and close_item [2] <= element[1]:
-            print "going for: " + str(close_item)
             return close_item
 
 def find_destination(search_for, game_board_map):
@@ -119,8 +174,6 @@ def find_destination(search_for, game_board_map):
         for destination in search_for:
                 if element[3] == destination:
                     possible_destinations.append(element)
-    print "possible destinations for: " + str(search_for) + " are: " + str(possible_destinations)
-    print
     if len(possible_destinations) > 0:
         if search_for[0] == 'monkey':
             destination = max(possible_destinations,
@@ -226,9 +279,9 @@ def possible_moves(astar_array, from_coordinate):
     print 'goalcoordinate: ' + str(goalcoordinate) + " value: " + get_value_from_coordinate(goalcoordinate)
     going_to_user = get_value_from_coordinate(goalcoordinate) == "user"
     if inventory_is_full:
-        avoid = ['wall', 'closed-door', 'song', 'album', 'playlist', 'banana', 'trap']
+        avoid = ['wall', 'closed-door', 'song', 'album', 'playlist', 'banana', 'trap', "lever"]
     else:
-        avoid = ['wall', 'closed-door', 'user']
+        avoid = ['wall', 'closed-door', 'user', "lever"]
         if going_to_user:
             avoid.remove('user')
     possible_moves = [move for move in astar_array if move_is_possible(move, avoid, from_coordinate)]
@@ -275,3 +328,16 @@ def get_value_from_coordinate(coordinate):
 
 def is_coordinates_equal(coordinate1, coordinate2):
     return coordinate1[0] == coordinate2[0] and coordinate1[1] == coordinate2[1]
+
+def get_points_in_inventory():
+    points_in_inventory = 0
+    for item_type in inventory:
+        if item_type == 'song':
+            points_in_inventory += 1
+        elif item_type == 'album':
+            points_in_inventory += 2
+        elif item_type == 'playlist':
+            points_in_inventory += 4
+    return points_in_inventory
+
+
