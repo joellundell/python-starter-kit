@@ -78,7 +78,6 @@ while not current_game_state['isGameOver']:
     afterProcessing = datetime.datetime.now()
     delta = afterProcessing - beforeProcessing
     print "Took " + str(delta.seconds)  + "." + str(delta.microseconds) + " seconds to process"
-    # import pdb; pdb.set_trace()
     print 'next_command: ' + str(next_command)
     # After sending your next move, you'll get the new game state back
     current_game_state = post_to_server(next_command)

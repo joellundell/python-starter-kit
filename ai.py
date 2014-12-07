@@ -6,6 +6,7 @@ current_level_layout = None
 picked_up_music_items = None
 current_position_of_monkey = None
 remaining_turns = None
+inventory_is_full = False
 
 def move(current_game_state):
     global current_position_of_monkey
@@ -27,7 +28,7 @@ def move(current_game_state):
     inventory_is_full =len(inventory) >= inventory_size
 
     # Map the game board and get the distance to everything on the map
-    game_board_map = map_game_board(current_position_of_monkey)
+    game_board_map = create_map_from(current_position_of_monkey, None)
     # print 'game_board_map: ' + str(game_board_map)
 
     ## Decide what to do, wheter it is to go to the user och collect something
@@ -37,77 +38,68 @@ def move(current_game_state):
     # When number of moves left is ecual to distance to closest user, go to hen
     
     ## Dictande to user:
-    closest_user = destination = find_destination(["user"], game_board_map)
-    dictance_to_user = closest_user[2]
+    closest_user = find_destination(["user"], game_board_map)
+    print 'closest_user: ' + str(closest_user)
+    if closest_user:
+        dictance_to_user = closest_user[2]
+    else: 
+        dictance_to_user = 1000
 
+    if "banana" in inventory and "speedy" not in buffs:
+        return {"command": "use", "item": "banana"}
 
-    ## only for banana test
+    # Real game strategy here:
     if inventory_is_full or (dictance_to_user < 3 and len(inventory) >= 1): # Inventory full, go to closest user
         destination = find_destination(["user"], game_board_map)
-    else:
-        destination = find_destination(["song", "album", "playlist", "banana", "trap"], 
+    elif score <= 0: # if score is less than 1, get some!
+        if len(inventory) <= 0: # Go pick up something
+            destination = find_destination(["song", "album", "playlist", "banana", "trap"], 
                 game_board_map)
-
-    ## Real game strategy here:
-    # if inventory_is_full: # Inventory full, go to closest user
-    #     destination = find_destination(["user"], game_board_map)
-    # elif score <= 0: # if score is less than 1, get some!
-    #     if len(inventory) <= 0: # Go pick up something
-    #         destination = find_destination(["song", "album", "playlist", "banana"], 
-    #             game_board_map)
-    #     else: # then return it to user
-    #         destination = find_destination(["user"], game_board_map)
-    # else: #TODO: Spank the monkey 
-    #     destination = find_destination(["monkey"], game_board_map)
+        else: # then return it to user
+            destination = find_destination(["user"], game_board_map)
+    else: #TODO: Spank the monkey 
+        destination = find_destination(["monkey"], game_board_map)
 
     # Create the path to the destination
-    if destination:
-        astar_array = create_astar_array(destination)
+    if destination is not None:
+        astar_array = create_map_from(destination, current_position_of_monkey)
     else:
         print 'Error: destination is: ' + str(destination)
         print '       returning: idle'
         return {'command': 'idle'} 
     
-
-    if "banana" in inventory and "speedy" not in buffs:
-        return {"command": "use", "item": "banana"}
     if ("trap" in inventory and dictance_to_user <= 1):
         return {"command": "use", "item": "trap"}
 
-
     move = get_move(astar_array, current_position_of_monkey)
-    direction = get_one_direction(move, current_position_of_monkey)
-    if 'speedy' in buffs:
-        move_2 = get_move(astar_array, move)
-        direction_2 = get_one_direction(move_2, move)
-
-    ## Print interestion stuff here
+    print "get move returned: " + str(move)
     print 'destination: ' + str(destination)
     print 'current_position_of_monkey: ' + str(current_position_of_monkey)
-    # print 'inventory: ' + str(inventory)
-    # print 'inventory_size: ' + str(inventory_size)
-    # print_game_board()
-    print ("Moving: [" + direction + "] towards [" +
-        get_value_from_coordinate(astar_array[0][0:2]) +
-        "] using: " + str(astar_array))
-    # import pdb; pdb.set_trace()
-
-    # Return next command
-    if direction == 'idle':
-        return {'command': 'idle'}
-    else:
-        if 'speedy' not in buffs:
-            return {'command': 'move', 
+    #if move is not None evaluate else return idle
+    #if speedy and move_2 is not None return Directions command
+    #else return direction with move
+    if move is not None:
+        direction = get_one_direction(move, current_position_of_monkey)
+        if 'speedy' in buffs:
+            move_2 = get_move(astar_array, move)
+            if move_2 is not None:
+                direction_2 = get_one_direction(move_2, move)
+                print 'Directions: ' + str(direction) + ' and ' + str(direction_2)
+                return {'command': 'move',
+                    'directions': [direction, direction_2]}
+            else:
+                return {'command': 'move',
                     'direction': direction}
         else:
-            print 'Directions: ' + str(direction) + ' and ' + str(direction_2) 
-            return {'command': 'move', 
-                    'directions': [direction, direction_2]}
+            return {'command': 'move',
+                    'direction': direction}
+    else:
+        return {'command': 'idle'}
 
 def find_destination(search_for, game_board_map):
-    print 'search_for: ' + str(search_for)
     possible_destinations = []
     for element in game_board_map:
+        #print "element:" + str(element) + " looking for: " + str(search_for)
         for destination in search_for:
                 if element[3] == destination:
                     possible_destinations.append(element)
@@ -131,50 +123,51 @@ def print_game_board():
         print row
 
 
-def map_game_board(monkey_position):
-    #create and add moneky to game_board_map
-    game_board_map = []
-    game_board_map.append(monkey_position + (0,
-        get_value_from_coordinate(monkey_position)))
-    
-    # iterateing through game_board_map and add new elements in end
-    # makes the loop end when there is no new elements to add
-    for element in game_board_map:
-        coordinates_around = get_coordinates_around((element[0], element[1]), 
-            ['wall', 'closed-door'])
-        # coordinates_around have +1 in dictance
-        counter = element[2] + 1   
-        for c in coordinates_around:
-            game_board_map = append_element_to_astar_array(c,
-                counter, game_board_map)
-    return game_board_map
-
-
-def create_astar_array(destination):
+def create_map_from(coordinate, stop_at):
     astar_array = []
-    destination_coordinates = (destination[0], destination[1])
+    destination_coordinates = (coordinate[0], coordinate[1])
     astar_array.append(destination_coordinates + (0,
-        get_value_from_coordinate(destination_coordinates)))
+                       get_value_from_coordinate(destination_coordinates)))
     for element in astar_array:
-        coordinates_around = get_coordinates_around((element[0], element[1]), 
-            ['wall', 'closed-door'])
+        astar_array = add_coordinate(element, stop_at, element[2], astar_array)
 
-        # coordinates_around have +1 in dictance
-        counter = element[2] + 1
-        for c in coordinates_around:
+    return astar_array
+
+
+def add_coordinate(coordinate, stop_at, current_counter, astar_array):
+    coordinates_around = get_coordinates_around((coordinate[0], coordinate[1]),
+                                                ['wall', 'closed-door'])
+    # coordinates_around have +1 in dictance
+    counter = current_counter + 1
+    for c in coordinates_around:
+        #Check if c is a tunnel, if so set c to the tunnel exit
+        value = get_value_from_coordinate(c)
+        if (value.startswith("tunnel")):
+            # find other entrance
+            tunnels = find_elements_on_map(current_level_layout,
+                                           value)
+            for tunnel in tunnels:
+                if not is_coordinates_equal(tunnel, c):
+                    c = tunnel
+                    break
+        if stop_at is not None:
             if (c[0] == current_position_of_monkey[0] and
-                c[1] == current_position_of_monkey[1]):
-                1+1
+                    c[1] == current_position_of_monkey[1]):
+                1 + 1
             else:
                 astar_array = append_element_to_astar_array(c, counter,
-                 astar_array)
+                                                            astar_array)
+        else:
+            astar_array = append_element_to_astar_array(c, counter,
+                                                        astar_array)
     return astar_array
 
 
 # careful when changing, map_game_board() and create_astar_array() use this
 def append_element_to_astar_array(coordinate, counter, current_astar_array):
     existingElements = [element for element in current_astar_array if
-            element[0] == coordinate[0] and element[1] == coordinate[1]]
+                        element[0] == coordinate[0] and element[1] ==
+                        coordinate[1]]
     # print str(existingElements)
     if len(existingElements) > 0:
         for element in existingElements:
@@ -195,11 +188,13 @@ def get_move(astar_array, from_coordinate):
         move = min(possible_moves_list, key=lambda move: move[2])
         return move
     else:
-        return 'idle'
+        return None
 
 
 def get_one_direction(move, from_coordinate):
     # import pdb; pdb.set_trace()
+    print "from_coordinate: " + str(from_coordinate) + " type: " + str(type(from_coordinate))
+    print "move: " + str(move) + " type: " + str(type(move))
     if move[0] == from_coordinate[0]:
         if from_coordinate[1] - move[1] > 0:
             return "left"
@@ -247,9 +242,22 @@ def get_coordinates_around(coordinate, avoid):
             c[1] < len(current_level_layout[0]) and 
             get_value_from_coordinate(c) not in avoid]
    # print filtered_list
-    #import pdb; pdb.set_trace()
     return filtered_list
+
+
+def find_elements_on_map(game_board, looking_for):
+    coordinates = []
+    for i in range(len(game_board)):
+        for j in range(len(game_board[0])):
+            value = get_value_from_coordinate([i, j])
+            if value == looking_for:
+                coordinates.append((i, j))
+    return coordinates
 
 
 def get_value_from_coordinate(coordinate):
     return current_level_layout[coordinate[0]][coordinate[1]]
+
+
+def is_coordinates_equal(coordinate1, coordinate2):
+    return coordinate1[0] == coordinate2[0] and coordinate1[1] == coordinate2[1]
