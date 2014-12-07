@@ -101,73 +101,111 @@ def print_game_board():
         print row
 
 
-def map_game_board(monkey_position):
-    #create and add moneky to game_board_map
-    game_board_map = []
-    game_board_map.append(monkey_position + (0,
-        get_value_from_coordinate(monkey_position)))
-    
-    # iterateing through game_board_map and add new elements in end
-    # makes the loop end when there is no new elements to add
-    for element in game_board_map:
-        coordinates_around = get_coordinates_around((element[0], element[1]), 
-            ['wall', 'closed-door'])
-        # coordinates_around have +1 in dictance
-        counter = element[2] + 1   
-        for c in coordinates_around:
-            game_board_map = append_element_to_astar_array(c,
-                counter, game_board_map)
-    return game_board_map
-
-
-def create_astar_array(destination):
-    astar_array = []
-    destination_coordinates = (destination[0], destination[1])
-    astar_array.append(destination_coordinates + (0,
-        get_value_from_coordinate(destination_coordinates)))
-    for element in astar_array:
-        coordinates_around = get_coordinates_around((element[0], element[1]), 
-            ['wall', 'closed-door'])
-
-        # coordinates_around have +1 in dictance
-        counter = element[2] + 1
-        for c in coordinates_around:
-            if (c[0] == current_position_of_monkey[0] and
-                c[1] == current_position_of_monkey[1]):
-                print "found monkey"
-            else:
-                astar_array = append_element_to_astar_array(c, counter,
-                 astar_array)
-    return astar_array
+#def map_game_board(monkey_position):
+#    #create and add moneky to game_board_map
+#    game_board_map = []
+#    game_board_map.append(monkey_position + (0,
+#        get_value_from_coordinate(monkey_position)))
+#    
+#    # iterateing through game_board_map and add new elements in end
+#    # makes the loop end when there is no new elements to add
+#    for element in game_board_map:
+#        coordinates_around = get_coordinates_around((element[0], element[1]), 
+#            ['wall', 'closed-door'])
+#        # coordinates_around have +1 in dictance
+#        counter = element[2] + 1   
+#        for c in coordinates_around:
+#            game_board_map = append_element_to_astar_array(c,
+#                counter, game_board_map)
+#    return game_board_map
+#
+#
+#def create_astar_array(destination):
+#    astar_array = []
+#    destination_coordinates = (destination[0], destination[1])
+#    astar_array.append(destination_coordinates + (0,
+#        get_value_from_coordinate(destination_coordinates)))
+#    for element in astar_array:
+#        coordinates_around = get_coordinates_around((element[0], element[1]), 
+#            ['wall', 'closed-door'])
+#
+#        # coordinates_around have +1 in dictance
+#        counter = element[2] + 1
+#        for c in coordinates_around:
+#            if (c[0] == current_position_of_monkey[0] and
+#                c[1] == current_position_of_monkey[1]):
+#                print "found monkey"
+#            else:
+#                astar_array = append_element_to_astar_array(c, counter,
+#                 astar_array)
+#    return astar_array
 
 def create_map_from(coordinate, stop_at):
+    print "create map from and stop at" + str(stop_at)
     astar_array = []
     destination_coordinates = (coordinate[0], coordinate[1])
     astar_array.append(destination_coordinates + (0,
-        get_value_from_coordinate(destination_coordinates)))
+                       get_value_from_coordinate(destination_coordinates)))
     for element in astar_array:
-        coordinates_around = get_coordinates_around((element[0], element[1]), 
-            ['wall', 'closed-door'])
+        astar_array = add_coordinate(element, stop_at, element[2], astar_array)
 
-        # coordinates_around have +1 in dictance
-        counter = element[2] + 1
-        for c in coordinates_around:
-            if stop_at is not None:
-                if (c[0] == current_position_of_monkey[0] and
+        # if it's tunnel, find other entrance and
+        # add coordinates around there with counter +1
+
+#        value = get_value_from_coordinate([element[0], element[1]])
+#        if (value.startswith("tunnel")):
+#            print "isTunnel"
+#            # find other entrance
+#            #import pdb; pdb.set_trace()
+#            tunnels = find_elements_on_map(current_level_layout,
+#                                           value)
+#            print "tunnel coordinates: " + str(tunnels)
+#            for tunnel in tunnels:
+#                if not is_coordinates_equal(tunnel, element):
+#        #            astar_array = add_coordinate(tunnel, stop_at, element[2], astar_array)
+#                    # add tunnel coordinate
+#                    append_element_to_astar_array(tunnel, element[2] + 
+    return astar_array
+
+
+def add_coordinate(coordinate, stop_at, current_counter, astar_array):
+    coordinates_around = get_coordinates_around((coordinate[0], coordinate[1]),
+                                                ['wall', 'closed-door'])
+    # coordinates_around have +1 in dictance
+    counter = current_counter + 1
+    for c in coordinates_around:
+        #Check if c is a tunnel, if so set c to the tunnel exit
+        value = get_value_from_coordinate(c)
+        if (value.startswith("tunnel")):
+            print "isTunnel"
+            # find other entrance
+            tunnels = find_elements_on_map(current_level_layout,
+                                           value)
+            print "tunnel coordinates: " + str(tunnels)
+            for tunnel in tunnels:
+                if not is_coordinates_equal(tunnel, c):
+                    print "old c: " + str(c)
+                    c = tunnel
+                    print "new  c: " + str(c)
+                    break
+        if stop_at is not None:
+            if (c[0] == current_position_of_monkey[0] and
                     c[1] == current_position_of_monkey[1]):
-                    print "found monkey"
-                else:
-                    astar_array = append_element_to_astar_array(c, counter,
-                                                                astar_array)
+                print "found the coordinate where it should stop at"
             else:
                 astar_array = append_element_to_astar_array(c, counter,
                                                             astar_array)
+        else:
+            astar_array = append_element_to_astar_array(c, counter,
+                                                        astar_array)
     return astar_array
+
 
 # careful when changing, map_game_board() and create_astar_array() use this
 def append_element_to_astar_array(coordinate, counter, current_astar_array):
     existingElements = [element for element in current_astar_array if
-            element[0] == coordinate[0] and element[1] == coordinate[1]]
+                        element[0] == coordinate[0] and element[1] ==
+                        coordinate[1]]
     # print str(existingElements)
     if len(existingElements) > 0:
         for element in existingElements:
@@ -240,9 +278,22 @@ def get_coordinates_around(coordinate, avoid):
             c[1] < len(current_level_layout[0]) and 
             get_value_from_coordinate(c) not in avoid]
    # print filtered_list
-    #import pdb; pdb.set_trace()
     return filtered_list
+
+
+def find_elements_on_map(game_board, looking_for):
+    coordinates = []
+    for i in range(len(game_board)):
+        for j in range(len(game_board[0])):
+            value = get_value_from_coordinate([i, j])
+            if value == looking_for:
+                coordinates.append((i, j))
+    return coordinates
 
 
 def get_value_from_coordinate(coordinate):
     return current_level_layout[coordinate[0]][coordinate[1]]
+
+
+def is_coordinates_equal(coordinate1, coordinate2):
+    return coordinate1[0] == coordinate2[0] and coordinate1[1] == coordinate2[1]
