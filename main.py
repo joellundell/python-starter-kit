@@ -70,9 +70,14 @@ current_game_state = post_to_server({'command': 'join game'})
 while not current_game_state['isGameOver']:
     print '##########################'
     print('Remaining turns: %d' % current_game_state['remainingTurns'])
-
+ 
+    import datetime
+    beforeProcessing = datetime.datetime.now()
     # Use your AI to decide in which direction to move...
     next_command = ai.move(current_game_state)
+    afterProcessing = datetime.datetime.now()
+    delta = afterProcessing - beforeProcessing
+    print "Took " + str(delta.seconds)  + "." + str(delta.microseconds) + " seconds to process"
     print 'next_command: ' + str(next_command)
     # After sending your next move, you'll get the new game state back
     current_game_state = post_to_server(next_command)
