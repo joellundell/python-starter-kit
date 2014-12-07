@@ -42,14 +42,16 @@ def move(current_game_state):
     print 'closest_user: ' + str(closest_user)
     if closest_user:
         dictance_to_user = closest_user[2]
-    else: 
+    else:
         dictance_to_user = 1000
 
     if "banana" in inventory and "speedy" not in buffs:
         return {"command": "use", "item": "banana"}
 
     # Real game strategy here:
-    if inventory_is_full or (dictance_to_user < 3 and len(inventory) >= 1): # Inventory full, go to closest user
+    if (inventory_is_full or (dictance_to_user < 3 and len(inventory) >= 1)
+            or (remaining_turns + 2 >= dictance_to_user and len(inventory) >= 1)):
+        #inventory full, close to user or soon end of game
         destination = find_destination(["user"], game_board_map)
     elif score <= 0: # if score is less than 1, get some!
         if len(inventory) <= 0: # Go pick up something
